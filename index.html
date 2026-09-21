@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16324f">
+<title>Shelf</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+:root{
+  --bg:#f2f4f7; --surface:#ffffff; --ink:#141a22; --muted:#5c6776; --line:#dde2e9;
+  --brand:#16324f; --brand-ink:#ffffff; --accent:#f5b21e; --accent-ink:#2a1e00;
+  --html:#2463d6; --html-soft:#e3ecfc; --md:#0e8a6a; --md-soft:#dcf3ec; --danger:#c62f2f;
+  --radius:14px;
+  --sans:system-ui,-apple-system,"Segoe UI","Noto Sans JP","Hiragino Sans","Yu Gothic UI",sans-serif;
+  --mono:ui-monospace,"Roboto Mono","Cascadia Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0f141a; --surface:#18202a; --ink:#e8edf3; --muted:#9aa6b4; --line:#2a3440;
+    --brand:#0b1a2a; --html:#7ea7ff; --html-soft:#1d2b47; --md:#5fd1ad; --md-soft:#143329;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--html);outline-offset:2px}
+[hidden]{display:none!important}
+
+/* top bar */
+.bar{position:sticky;top:0;z-index:5;background:var(--brand);color:var(--brand-ink);padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 12px;display:grid;gap:10px}
+.bar-row{display:flex;align-items:center;gap:10px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:19px;letter-spacing:.02em;flex:1}
+.logo img{width:28px;height:28px;border-radius:7px}
+.count{font-size:12px;font-weight:600;opacity:.75}
+.search{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border-radius:12px;padding:0 12px;height:42px}
+.search svg{width:18px;height:18px;flex:none;opacity:.8}
+.search input{flex:1;min-width:0;background:none;border:none;color:inherit;font:inherit;font-size:16px;outline:none;height:100%}
+.search input::placeholder{color:rgba(255,255,255,.65)}
+.icon-btn{width:40px;height:40px;border:none;background:none;border-radius:10px;display:grid;place-items:center;cursor:pointer;color:inherit}
+.icon-btn svg{width:22px;height:22px}
+.icon-btn:active{background:rgba(127,127,127,.2)}
+
+/* list */
+main{padding:12px 16px calc(96px + env(safe-area-inset-bottom,0px));max-width:760px;margin:0 auto}
+.filters{display:flex;gap:6px;margin:4px 0 12px;overflow-x:auto}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 6px 10px 12px}
+.item-open{flex:1;min-width:0;display:flex;align-items:center;gap:12px;border:none;background:none;text-align:left;cursor:pointer;padding:0}
+.badge{flex:none;width:44px;height:44px;border-radius:10px;display:grid;place-items:center;font-family:var(--mono);font-size:12px;font-weight:800;letter-spacing:.02em}
+.badge.html{background:var(--html-soft);color:var(--html)}
+.badge.md{background:var(--md-soft);color:var(--md)}
+.meta{min-width:0;display:grid;gap:2px}
+.name{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sub{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.empty{text-align:center;color:var(--muted);padding:48px 12px;font-size:14px}
+
+/* floating add */
+.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:6;height:56px;padding:0 22px 0 18px;border:none;border-radius:18px;background:var(--accent);color:var(--accent-ink);font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px;box-shadow:0 6px 20px rgba(0,0,0,.22);cursor:pointer}
+.fab svg{width:22px;height:22px}
+
+/* sheets */
+.scrim{position:fixed;inset:0;z-index:20;background:rgba(8,12,18,.5);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:8px 8px calc(12px + env(safe-area-inset-bottom,0px));max-height:85vh;overflow:auto}
+.sheet h3{margin:10px 12px 6px;font-size:14px;color:var(--muted);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sheet-btn{width:100%;display:flex;align-items:center;gap:14px;border:none;background:none;padding:14px 12px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;text-align:left}
+.sheet-btn:active{background:var(--bg)}
+.sheet-btn svg{width:22px;height:22px;flex:none;color:var(--muted)}
+.sheet-btn small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.sheet-btn.danger,.sheet-btn.danger svg{color:var(--danger)}
+.form{padding:4px 12px 8px;display:grid;gap:10px}
+.form label{font-size:13px;font-weight:700;color:var(--muted)}
+.form input,.form textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.form textarea{min-height:40vh;font-family:var(--mono);font-size:13px;resize:vertical}
+.row-btns{display:flex;gap:8px;justify-content:flex-end}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 18px;font-weight:700;cursor:pointer}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.danger{background:var(--danger);color:#fff;border-color:var(--danger)}
+
+/* viewer */
+.viewer{position:fixed;inset:0;z-index:10;background:var(--bg);display:flex;flex-direction:column}
+.vbar{flex:none;display:flex;align-items:center;gap:4px;background:var(--brand);color:var(--brand-ink);padding:calc(env(safe-area-inset-top,0px) + 4px) 4px 4px}
+.vtitle{flex:1;min-width:0;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.viewer iframe{flex:1;width:100%;border:none;background:#fff}
+
+.toast{position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;max-width:calc(100vw - 32px);box-shadow:0 6px 20px rgba(0,0,0,.25)}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="bar-row">
+    <div class="logo"><img src="icons/icon-192.png" alt="">Shelf <span class="count" id="count"></span></div>
+  </div>
+  <label class="search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="ファイル名で検索" autocomplete="off">
+  </label>
+</header>
+
+<main>
+  <div class="filters" role="group" aria-label="種類で絞り込み">
+    <button type="button" class="chip" data-f="all" aria-pressed="true">すべて</button>
+    <button type="button" class="chip" data-f="html" aria-pressed="false">HTML</button>
+    <button type="button" class="chip" data-f="md" aria-pressed="false">Markdown</button>
+  </div>
+  <ul class="list" id="list"></ul>
+  <p class="empty" id="empty" hidden></p>
+</main>
+
+<button type="button" class="fab" id="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>追加</button>
+<input type="file" id="picker" multiple accept=".html,.htm,.md,.markdown,.txt,text/html,text/markdown,text/plain" hidden>
+
+<section class="viewer" id="viewer" hidden aria-modal="true" role="dialog" aria-labelledby="vtitle">
+  <div class="vbar">
+    <button type="button" class="icon-btn" id="vback" aria-label="一覧に戻る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="vtitle" id="vtitle"></div>
+    <button type="button" class="icon-btn" id="vmore" aria-label="メニュー"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+  </div>
+  <iframe id="frame" title="ファイルの内容"></iframe>
+</section>
+
+<div class="scrim" id="scrim" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script src="db.js"></script>
+<script src="marked.js"></script>
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var files = [], filter = 'all', current = null;
+  var ICON = {
+    file:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/></svg>',
+    paste:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9z"/></svg>',
+    share:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>',
+    edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>',
+    trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
+    reload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>',
+    dots:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>'
+  };
+  function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function fmtSize(n){ return n<1024? n+' B' : n<1048576? (n/1024).toFixed(n<10240?1:0)+' KB' : (n/1048576).toFixed(1)+' MB'; }
+  function fmtDate(t){
+    if(!t) return '';
+    var d=new Date(t), now=new Date(), same=d.toDateString()===now.toDateString();
+    return same? d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}) : d.toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'});
+  }
+  var toastT;
+  function toast(msg){ var t=$('toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(function(){t.hidden=true;},2600); }
+
+  /* ---------- list ---------- */
+  function load(){ return ShelfDB.all().then(function(list){ files=list; render(); }); }
+  function render(){
+    var q=$('q').value.trim().toLowerCase();
+    var shown=files.filter(function(f){ return (filter==='all'||f.kind===filter) && (!q||f.name.toLowerCase().indexOf(q)>=0); })
+      .sort(function(a,b){ return Math.max(b.openedAt||0,b.updatedAt) - Math.max(a.openedAt||0,a.updatedAt); });
+    $('count').textContent=files.length? files.length+'件' : '';
+    $('list').innerHTML=shown.map(function(f){
+      return '<li class="item"><button type="button" class="item-open" data-open="'+f.id+'">'+
+        '<span class="badge '+f.kind+'">'+(f.kind==='html'?'HTML':'MD')+'</span>'+
+        '<span class="meta"><span class="name">'+esc(f.name)+'</span>'+
+        '<span class="sub">'+fmtSize(f.size)+' ・ '+(f.openedAt?'最後に開いた '+fmtDate(f.openedAt):'追加 '+fmtDate(f.updatedAt))+'</span></span></button>'+
+        '<button type="button" class="icon-btn" data-menu="'+f.id+'" aria-label="'+esc(f.name)+' のメニュー">'+ICON.dots+'</button></li>';
+    }).join('');
+    var e=$('empty');
+    if(!shown.length){ e.hidden=false; e.textContent= files.length? '該当するファイルはありません。' : 'まだファイルがありません。右下の「追加」から取り込めます。'; }
+    else e.hidden=true;
+  }
+  $('list').addEventListener('click',function(ev){
+    var o=ev.target.closest('[data-open]'), m=ev.target.closest('[data-menu]');
+    if(o) openFile(o.dataset.open);
+    else if(m) fileMenu(byId(m.dataset.menu));
+  });
+  $('q').addEventListener('input',render);
+  document.querySelectorAll('.chip').forEach(function(c){
+    c.addEventListener('click',function(){
+      filter=c.dataset.f;
+      document.querySelectorAll('.chip').forEach(function(x){ x.setAttribute('aria-pressed', String(x===c)); });
+      render();
+    });
+  });
+  function byId(id){ return files.filter(function(f){return f.id===id;})[0]; }
+
+  /* ---------- import ---------- */
+  function decode(buf){
+    try{ return new TextDecoder('utf-8',{fatal:true}).decode(buf); }
+    catch(e){ try{ return new TextDecoder('shift_jis').decode(buf); }catch(e2){ return new TextDecoder().decode(buf); } }
+  }
+  $('picker').addEventListener('change',function(){
+    var list=[].slice.call(this.files||[]); this.value='';
+    if(!list.length) return;
+    var replaced=0, last=null;
+    list.reduce(function(p,f){
+      return p.then(function(){ return f.arrayBuffer(); }).then(function(buf){ return ShelfDB.addText(f.name, decode(buf)); })
+        .then(function(r){ if(r.replaced) replaced++; last=r.rec; });
+    },Promise.resolve()).then(load).then(function(){
+      toast(list.length+'件を追加しました'+(replaced? '（'+replaced+'件は同じ名前を上書き）':''));
+      if(list.length===1 && last) openFile(last.id);
+    }).catch(function(){ toast('読み込めないファイルがありました'); });
+  });
+  $('add').addEventListener('click',function(){
+    sheet('<h3>ファイルを追加</h3>'+
+      '<button type="button" class="sheet-btn" data-act="pick">'+ICON.file+'<span>端末のファイルを選ぶ<small>.html / .md（複数選択できます）</small></span></button>'+
+      '<button type="button" class="sheet-btn" data-act="paste">'+ICON.paste+'<span>テキストを貼り付けて追加<small>Claudeの返答やコードをコピーした時に</small></span></button>',
+      function(act){ if(act==='pick'){ closeSheet(); $('picker').click(); } if(act==='paste'){ pasteForm(); } });
+  });
+  function pasteForm(){
+    sheet('<h3>貼り付けて追加</h3><div class="form">'+
+      '<label for="pname">ファイル名</label><input id="pname" placeholder="例：メモ.md（拡張子なしなら自動判定）">'+
+      '<label for="ptext">内容</label><textarea id="ptext" placeholder="Markdown または HTML を貼り付け"></textarea>'+
+      '<div class="row-btns"><button type="button" class="btn" data-act="cancel">やめる</button><button type="button" class="btn primary" data-act="save">追加する</button></div></div>',
+      function(act){
+        if(act==='cancel') return closeSheet();
+        if(act==='save'){
+          var t=$('ptext').value; if(!t.trim()){ $('ptext').focus(); return; }
+          var name=$('pname').value.trim() || (t.trim().match(/^#\s+(.+)/m)||[])[1] || ('メモ '+new Date().toLocaleString('ja-JP'));
+          name=name.replace(/[\\/:*?"<>|]/g,'_');
+          ShelfDB.addText(name,t).then(function(r){ closeSheet(); return load().then(function(){ toast('追加しました'); openFile(r.rec.id); }); });
+        }
+      });
+    setTimeout(function(){ $('ptext').focus(); },60);
+  }
+
+  /* ---------- sheets ---------- */
+  var sheetHandler=null;
+  function sheet(html,handler){ $('sheet').innerHTML=html; sheetHandler=handler; $('scrim').hidden=false; }
+  function closeSheet(){ $('scrim').hidden=true; sheetHandler=null; }
+  $('scrim').addEventListener('click',function(ev){
+    if(ev.target===$('scrim')) return closeSheet();
+    var b=ev.target.closest('[data-act]'); if(b && sheetHandler) sheetHandler(b.dataset.act);
+  });
+  function fileMenu(f){
+    if(!f) return;
+    sheet('<h3>'+esc(f.name)+'</h3>'+
+      '<button type="button" class="sheet-btn" data-act="share">'+ICON.share+'<span>ほかのアプリへ共有<small>Chromeで開く・送る など</small></span></button>'+
+      '<button type="button" class="sheet-btn" data-act="rename">'+ICON.edit+'<span>名前を変更</span></button>'+
+      '<button type="button" class="sheet-btn danger" data-act="del">'+ICON.trash+'<span>削除</span></button>',
+      function(act){
+        if(act==='share') shareFile(f);
+        if(act==='rename') renameForm(f);
+        if(act==='del') confirmDelete(f);
+      });
+  }
+  function renameForm(f){
+    sheet('<h3>名前を変更</h3><div class="form"><label for="rname">新しい名前</label><input id="rname" value="'+esc(f.name)+'">'+
+      '<div class="row-btns"><button type="button" class="btn" data-act="cancel">やめる</button><button type="button" class="btn primary" data-act="ok">変更する</button></div></div>',
+      function(act){
+        if(act==='cancel') return closeSheet();
+        var n=$('rname').value.trim(); if(!n) return;
+        if(files.some(function(x){return x.name===n && x.id!==f.id;})){ toast('同じ名前のファイルがあります'); return; }
+        f.name=n; ShelfDB.put(f).then(function(){ closeSheet(); if(current&&current.id===f.id) $('vtitle').textContent=n; load(); toast('名前を変更しました'); });
+      });
+    setTimeout(function(){ var i=$('rname'); i.focus(); i.setSelectionRange(0, i.value.lastIndexOf('.')>0? i.value.lastIndexOf('.') : i.value.length); },60);
+  }
+  function confirmDelete(f){
+    sheet('<h3>削除しますか？</h3><div class="form"><p style="margin:0">「'+esc(f.name)+'」をShelfから削除します。元に戻せません。</p>'+
+      '<div class="row-btns"><button type="button" class="btn" data-act="cancel">やめる</button><button type="button" class="btn danger" data-act="ok">削除する</button></div></div>',
+      function(act){
+        if(act==='cancel') return closeSheet();
+        ShelfDB.del(f.id).then(function(){ closeSheet(); if(current&&current.id===f.id) history.back(); load(); toast('削除しました'); });
+      });
+  }
+  function shareFile(f){
+    var type=f.kind==='html'?'text/html':'text/markdown';
+    var file=new File([f.text], f.name, {type:type});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      navigator.share({files:[file], title:f.name}).then(closeSheet).catch(function(){});
+    } else if(navigator.share){
+      navigator.share({title:f.name, text:f.text}).then(closeSheet).catch(function(){});
+    } else toast('この端末では共有できません');
+  }
+
+  /* ---------- viewer ---------- */
+  var MD_CSS='body{margin:0;background:#fff;color:#1a1f27;font:16px/1.75 system-ui,-apple-system,"Segoe UI","Noto Sans JP","Hiragino Sans",sans-serif;-webkit-text-size-adjust:100%}'+
+    '.doc{max-width:720px;margin:0 auto;padding:20px 18px 64px;overflow-wrap:anywhere}'+
+    'h1,h2,h3,h4{line-height:1.35;margin:1.6em 0 .6em}h1{font-size:1.6em;margin-top:.4em}h2{font-size:1.3em;padding-bottom:.25em;border-bottom:1px solid #dde2e9}h3{font-size:1.12em}'+
+    'p,ul,ol,blockquote,table,pre{margin:0 0 1em}a{color:#2463d6}img{max-width:100%;height:auto}'+
+    'code{font-family:ui-monospace,"Roboto Mono",Menlo,Consolas,monospace;font-size:.88em;background:#eef1f5;padding:.1em .35em;border-radius:5px}'+
+    'pre{background:#141a22;color:#e8edf3;padding:14px 16px;border-radius:10px;overflow-x:auto;line-height:1.5}pre code{background:none;padding:0;color:inherit;font-size:13px}'+
+    'blockquote{border-left:4px solid #f5b21e;margin-left:0;padding:.2em 0 .2em 14px;color:#4a5563}'+
+    '.tw{overflow-x:auto;margin:0 0 1em}table{border-collapse:collapse;min-width:100%;font-size:.94em;margin:0}th,td{border:1px solid #dde2e9;padding:6px 10px;text-align:left;vertical-align:top}th{background:#f2f4f7}'+
+    'hr{border:none;border-top:1px solid #dde2e9;margin:2em 0}li>input[type=checkbox]{margin-right:.4em}'+
+    '@media (prefers-color-scheme:dark){body{background:#0f141a;color:#e3e8ee}h2{border-color:#2a3440}code{background:#1f2833}pre{background:#05080c}a{color:#7ea7ff}blockquote{color:#a9b3c0}th{background:#18202a}th,td{border-color:#2a3440}hr{border-color:#2a3440}}';
+  function mdDoc(f){
+    var body;
+    try{ body=marked.parse(f.text,{gfm:true,breaks:false}); }catch(e){ body='<pre>'+esc(f.text)+'</pre>'; }
+    body=body.replace(/<table>/g,'<div class="tw"><table>').replace(/<\/table>/g,'</table></div>');
+    return '<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+
+      '<base target="_blank"><style>'+MD_CSS+'</style></head><body><article class="doc">'+body+'</article></body></html>';
+  }
+  /* storage shim: keeps each HTML file's localStorage in Shelf (the frame itself has no storage) */
+  function shim(f){
+    var snap=JSON.stringify(f.storage||{}).replace(/</g,'\\u003c');
+    return '<script>(function(){var id='+JSON.stringify(f.id)+',d='+snap+';'+
+      'function mk(save){return{getItem:function(k){k=String(k);return Object.prototype.hasOwnProperty.call(d,k)?d[k]:null},'+
+      'setItem:function(k,v){d[String(k)]=String(v);save()},removeItem:function(k){delete d[String(k)];save()},'+
+      'clear:function(){for(var k in d)delete d[k];save()},key:function(i){return Object.keys(d)[i]||null},get length(){return Object.keys(d).length}}}'+
+      'var ls=mk(function(){try{parent.postMessage({shelfStore:id,data:d},"*")}catch(e){}});'+
+      'var ss=(function(){var o={};return{getItem:function(k){return Object.prototype.hasOwnProperty.call(o,k)?o[k]:null},setItem:function(k,v){o[k]=String(v)},removeItem:function(k){delete o[k]},clear:function(){o={}},key:function(i){return Object.keys(o)[i]||null},get length(){return Object.keys(o).length}}})();'+
+      'try{Object.defineProperty(window,"localStorage",{value:ls,configurable:true})}catch(e){}'+
+      'try{Object.defineProperty(window,"sessionStorage",{value:ss,configurable:true})}catch(e){}})();<\/script>';
+  }
+  function htmlDoc(f){
+    var t=f.text, add='';
+    if(!/<meta[^>]+charset/i.test(t)) add+='<meta charset="utf-8">';
+    if(!/<meta[^>]+name=["']?viewport/i.test(t)) add+='<meta name="viewport" content="width=device-width,initial-scale=1">';
+    add+=shim(f);
+    var m=t.match(/<head(\s[^>]*)?>/i);
+    if(m) return t.replace(m[0], m[0]+add);
+    var h=t.match(/<html(\s[^>]*)?>/i);
+    if(h) return t.replace(h[0], h[0]+'<head>'+add+'</head>');
+    /* fragments such as Claude artifact pages: give them a document around the content */
+    return '<!doctype html><html lang="ja"><head>'+add+'</head><body>'+t+'</body></html>';
+  }
+  window.addEventListener('message',function(ev){
+    var fr=$('frame');
+    if(!current || ev.source!==fr.contentWindow || !ev.data || ev.data.shelfStore!==current.id) return;
+    var data=ev.data.data; if(typeof data!=='object'||!data) return;
+    var clean={}; Object.keys(data).slice(0,500).forEach(function(k){ clean[k]=String(data[k]).slice(0,200000); });
+    current.storage=clean; ShelfDB.put(current);
+  });
+  /* a fresh iframe per view keeps the frame's loads out of the back-button history */
+  function newFrame(){
+    var old=$('frame'), fr=document.createElement('iframe');
+    fr.id='frame'; fr.title='ファイルの内容';
+    old.parentNode.replaceChild(fr,old); return fr;
+  }
+  function show(f){
+    var fr=newFrame();
+    if(f.kind==='html'){
+      fr.setAttribute('sandbox','allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms allow-modals allow-downloads');
+      fr.srcdoc=htmlDoc(f);
+    } else {
+      fr.setAttribute('sandbox','allow-popups allow-popups-to-escape-sandbox');
+      fr.srcdoc=mdDoc(f);
+    }
+  }
+  function openFile(id, fromHistory){
+    ShelfDB.get(id).then(function(f){
+      if(!f){ toast('ファイルが見つかりません'); return; }
+      current=f; f.openedAt=Date.now(); ShelfDB.put(f).then(load);
+      $('vtitle').textContent=f.name; $('viewer').hidden=false; document.body.style.overflow='hidden';
+      show(f);
+      if(!fromHistory) history.pushState({open:id},'','#'+encodeURIComponent(id));
+    });
+  }
+  function closeViewer(){
+    current=null; $('viewer').hidden=true; document.body.style.overflow='';
+    newFrame();
+  }
+  $('vback').addEventListener('click',function(){ history.state&&history.state.open? history.back() : (closeViewer(), history.replaceState(null,'',location.pathname)); });
+  window.addEventListener('popstate',function(ev){
+    closeSheet();
+    if(ev.state&&ev.state.open) openFile(ev.state.open,true); else closeViewer();
+  });
+  $('vmore').addEventListener('click',function(){
+    var f=current; if(!f) return;
+    sheet('<h3>'+esc(f.name)+'</h3>'+
+      '<button type="button" class="sheet-btn" data-act="reload">'+ICON.reload+'<span>最初から表示し直す</span></button>'+
+      '<button type="button" class="sheet-btn" data-act="share">'+ICON.share+'<span>ほかのアプリへ共有</span></button>'+
+      '<button type="button" class="sheet-btn" data-act="rename">'+ICON.edit+'<span>名前を変更</span></button>'+
+      (f.kind==='html'?'<button type="button" class="sheet-btn" data-act="clear">'+ICON.trash+'<span>このページの保存データを消す<small>チェック状態などをリセット</small></span></button>':'')+
+      '<button type="button" class="sheet-btn danger" data-act="del">'+ICON.trash+'<span>削除</span></button>',
+      function(act){
+        if(act==='reload'){ closeSheet(); show(f); }
+        if(act==='share') shareFile(f);
+        if(act==='rename') renameForm(f);
+        if(act==='clear'){ f.storage={}; ShelfDB.put(f).then(function(){ closeSheet(); show(f); toast('保存データを消しました'); }); }
+        if(act==='del') confirmDelete(f);
+      });
+  });
+  document.addEventListener('keydown',function(ev){ if(ev.key==='Escape'){ if(!$('scrim').hidden) closeSheet(); else if(current) history.back(); } });
+
+  /* ---------- first run & share target ---------- */
+  var GUIDE='# Shelf の使い方\n\nClaudeで作った **HTML** や **Markdown** のファイルを取り込んで、オフラインでもすぐ開けるビューアです。\n\n'+
+    '## 取り込み方\n\n'+
+    '- **ほかのアプリから共有**：ファイルアプリやGoogleドライブ、Claudeアプリでファイルを「共有」→ **Shelf** を選ぶ\n'+
+    '- **右下の「追加」**：端末のファイルを選ぶ（複数OK）、またはコピーした文章を貼り付ける\n'+
+    '- 同じ名前のファイルを取り込むと **上書き** されます（ページのチェック状態などは残ります）\n\n'+
+    '## 開き方\n\n- 一覧をタップすると全画面で開きます。戻るジェスチャーで一覧へ。\n- HTMLはボタンやアニメーションも動きます。\n'+
+    '- ⋮ メニューから、共有・名前の変更・削除ができます。\n\n'+
+    '## オフライン\n\n一度開いたあとは、ネットなしでもアプリも中身も開けます。ファイルはこの端末の中だけに保存されます。\n\n'+
+    '> このメモは消してもかまいません。';
+  function boot(){
+    if(navigator.storage&&navigator.storage.persist) navigator.storage.persist().catch(function(){});
+    var p=new URLSearchParams(location.search);
+    var seeded=false; try{ seeded=localStorage.getItem('shelf-seeded')==='1'; }catch(e){}
+    var ready= seeded? Promise.resolve() : ShelfDB.all().then(function(l){
+      try{ localStorage.setItem('shelf-seeded','1'); }catch(e){}
+      if(!l.length) return ShelfDB.addText('Shelfの使い方.md',GUIDE);
+    });
+    ready.then(load).then(function(){
+      if(p.has('shared')){
+        var n=+p.get('shared')||0;
+        history.replaceState(null,'',location.pathname);
+        toast(n? n+'件を取り込みました' : '取り込めるファイルがありませんでした');
+        if(p.get('open')) openFile(p.get('open'));
+      }
+    });
+  }
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
